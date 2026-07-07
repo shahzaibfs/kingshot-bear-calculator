@@ -1,219 +1,211 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kingshot Priority March Calculator</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kingdom 2044 - BEAR HUNT CALCULATOR</title>
 
-<style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:Segoe UI,Tahoma,Geneva,Verdana,sans-serif;
-}
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family:
+          Segoe UI,
+          Tahoma,
+          Geneva,
+          Verdana,
+          sans-serif;
+      }
 
-body{
-    background:#0f172a;
-    color:#fff;
-    padding:40px;
-}
+      body {
+        background: #0f172a;
+        color: #fff;
+        padding: 40px;
+      }
 
-.container{
-    max-width:1000px;
-    margin:auto;
-    background:#1e293b;
-    border-radius:15px;
-    padding:30px;
-    box-shadow:0 15px 35px rgba(0,0,0,.4);
-}
+      .container {
+        max-width: 1000px;
+        margin: auto;
+        background: #1e293b;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+      }
 
-h1{
-    text-align:center;
-    margin-bottom:25px;
-}
+      h1 {
+        text-align: center;
+        margin-bottom: 25px;
+      }
 
-.grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-    gap:15px;
-}
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 15px;
+      }
 
-.card{
-    background:#334155;
-    padding:15px;
-    border-radius:10px;
-}
+      .card {
+        background: #334155;
+        padding: 15px;
+        border-radius: 10px;
+      }
 
-label{
-    display:block;
-    margin-bottom:8px;
-    font-weight:bold;
-}
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+      }
 
-input{
-    width:100%;
-    padding:12px;
-    font-size:18px;
-    border:none;
-    border-radius:8px;
-}
+      input {
+        width: 100%;
+        padding: 12px;
+        font-size: 18px;
+        border: none;
+        border-radius: 8px;
+      }
 
-button{
-    width:100%;
-    margin-top:20px;
-    padding:15px;
-    font-size:18px;
-    background:#2563eb;
-    color:white;
-    border:none;
-    border-radius:10px;
-    cursor:pointer;
-    transition:.25s;
-}
+      button {
+        width: 100%;
+        margin-top: 20px;
+        padding: 15px;
+        font-size: 18px;
+        background: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: 0.25s;
+      }
 
-button:hover{
-    background:#1d4ed8;
-}
+      button:hover {
+        background: #1d4ed8;
+      }
 
-.result{
-    margin-top:30px;
-}
+      .result {
+        margin-top: 30px;
+      }
 
-.tb{
-      width:100%;
-      overflow: auto;
-}
+      .tb {
+        width: 100%;
+        overflow: auto;
+      }
 
-table{
-    width:100%;
-    margin-top:15px;
-}
+      table {
+        width: 100%;
+        margin-top: 15px;
+      }
 
-th,td{
-    border:1px solid #475569;
-    padding:12px;
-    text-align:center;
-}
+      th,
+      td {
+        border: 1px solid #475569;
+        padding: 12px;
+        text-align: center;
+      }
 
-th{
-    background:#1d4ed8;
-}
+      th {
+        background: #1d4ed8;
+      }
 
-.remaining{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-    gap:15px;
-    margin-top:25px;
-}
+      .remaining {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 15px;
+        margin-top: 25px;
+      }
 
-.remaining div{
-    background:#334155;
-    padding:20px;
-    border-radius:10px;
-    text-align:center;
-}
+      .remaining div {
+        background: #334155;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+      }
 
-.note{
-    margin-top:20px;
-    background:#0f172a;
-    border-left:4px solid #3b82f6;
-    padding:15px;
-    border-radius:8px;
-    line-height:1.6;
-}
-</style>
+      .note {
+        margin-top: 20px;
+        background: #0f172a;
+        border-left: 4px solid #3b82f6;
+        padding: 15px;
+        border-radius: 8px;
+        line-height: 1.6;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🏹 Kingshot Priority March Calculator</h1>
 
-</head>
-<body>
+      <div class="grid">
+        <div class="card">
+          <label>Total Archers</label>
+          <input id="archers" type="number" value="100000" />
+        </div>
 
-<div class="container">
+        <div class="card">
+          <label>Total Cavalry</label>
+          <input id="cavalry" type="number" value="100000" />
+        </div>
 
-<h1>🏹 Kingshot Priority March Calculator</h1>
+        <div class="card">
+          <label>Total Infantry</label>
+          <input id="infantry" type="number" value="100000" />
+        </div>
 
-<div class="grid">
+        <div class="card">
+          <label>March Size</label>
+          <input id="marchSize" type="number" value="60000" />
+        </div>
 
-<div class="card">
-<label>Total Archers</label>
-<input id="archers" type="number" value="100000">
-</div>
+        <div class="card">
+          <label>Priority Marches</label>
+          <input id="priorityMarches" type="number" value="3" />
+        </div>
+      </div>
 
-<div class="card">
-<label>Total Cavalry</label>
-<input id="cavalry" type="number" value="100000">
-</div>
+      <button onclick="calculate()">Calculate</button>
 
-<div class="card">
-<label>Total Infantry</label>
-<input id="infantry" type="number" value="100000">
-</div>
+      <div id="output" class="result"></div>
+    </div>
 
-<div class="card">
-<label>March Size</label>
-<input id="marchSize" type="number" value="60000">
-</div>
+    <script>
+      function calculate() {
+        let A = parseInt(document.getElementById("archers").value) || 0;
+        let C = parseInt(document.getElementById("cavalry").value) || 0;
+        let I = parseInt(document.getElementById("infantry").value) || 0;
 
-<div class="card">
-<label>Priority Marches</label>
-<input id="priorityMarches" type="number" value="3">
-</div>
+        const ORIGINAL_A = A;
+        const ORIGINAL_C = C;
+        const ORIGINAL_I = I;
 
-</div>
+        const MARCH_SIZE =
+          parseInt(document.getElementById("marchSize").value) || 60000;
+        const PRIORITY =
+          parseInt(document.getElementById("priorityMarches").value) || 3;
 
-<button onclick="calculate()">
-Calculate
-</button>
+        const FIX_INFANTRY = Math.round(MARCH_SIZE * 0.05);
+        const MAX_ARCHERS = Math.round(MARCH_SIZE * 0.85);
 
-<div id="output" class="result"></div>
+        // Validation
+        const MIN_ARCHER_PERCENT = 50;
+        const MIN_ARCHERS = Math.floor(MARCH_SIZE * (MIN_ARCHER_PERCENT / 100));
 
-</div>
+        const archersPerMarch = Math.floor(A / PRIORITY);
 
-<script>
-
-function calculate(){
-
-   
-
-
-let A=parseInt(document.getElementById("archers").value)||0;
-let C=parseInt(document.getElementById("cavalry").value)||0;
-let I=parseInt(document.getElementById("infantry").value)||0;
-
-const ORIGINAL_A=A;
-const ORIGINAL_C=C;
-const ORIGINAL_I=I;
-
-const MARCH_SIZE=parseInt(document.getElementById("marchSize").value)||60000;
-const PRIORITY=parseInt(document.getElementById("priorityMarches").value)||3;
-
-const FIX_INFANTRY=Math.round(MARCH_SIZE*0.05);
-const MAX_ARCHERS=Math.round(MARCH_SIZE*0.85);
-
-
-// Validation
-const MIN_ARCHER_PERCENT = 50;
-const MIN_ARCHERS = Math.floor(MARCH_SIZE * (MIN_ARCHER_PERCENT / 100));
-
-const archersPerMarch = Math.floor(A / PRIORITY);
-
-if (archersPerMarch < MIN_ARCHERS) {
-
-    alert(
-`⚠️ Not enough Archers!
+        if (archersPerMarch < MIN_ARCHERS) {
+          alert(
+            `⚠️ Not enough Archers!
 
 Archers per Priority March: ${archersPerMarch.toLocaleString()}
 
 Minimum Required:
 ${MIN_ARCHERS.toLocaleString()} (${MIN_ARCHER_PERCENT}% of ${MARCH_SIZE.toLocaleString()})
 
-Please reduce the number of Priority Marches or increase your Archers.`
-    );
+Please reduce the number of Priority Marches or increase your Archers.`,
+          );
 
-    return;
-}
+          return;
+        }
 
-
-let html=`
+        let html = `
 <h2>
 Priority Marches: ${PRIORITY} |
 March Size: ${MARCH_SIZE.toLocaleString()}
@@ -230,61 +222,54 @@ March Size: ${MARCH_SIZE.toLocaleString()}
 </tr>
 `;
 
-for(let march=1;march<=PRIORITY;march++){
+        for (let march = 1; march <= PRIORITY; march++) {
+          let remainingMarches = PRIORITY - march + 1;
 
-let remainingMarches=PRIORITY-march+1;
+          // Divide remaining archers evenly
+          let archers = Math.min(MAX_ARCHERS, Math.floor(A / remainingMarches));
 
-// Divide remaining archers evenly
-let archers=Math.min(
-    MAX_ARCHERS,
-    Math.floor(A/remainingMarches)
-);
+          let infantry = FIX_INFANTRY;
 
-let infantry=FIX_INFANTRY;
+          // Fill cavalry
+          let cavalry = Math.min(
+            Math.floor(C / remainingMarches),
+            MARCH_SIZE - archers - infantry,
+          );
 
-// Fill cavalry
-let cavalry=Math.min(
-    Math.floor(C/remainingMarches),
-    MARCH_SIZE-archers-infantry
-);
+          // If march still not full, use remaining cavalry then infantry
+          let total = archers + cavalry + infantry;
 
-// If march still not full, use remaining cavalry then infantry
-let total=archers+cavalry+infantry;
+          if (total < MARCH_SIZE) {
+            let need = MARCH_SIZE - total;
 
-if(total<MARCH_SIZE){
+            let spareCavalry = C - cavalry;
 
-let need=MARCH_SIZE-total;
+            let addC = Math.min(spareCavalry, need);
 
-let spareCavalry=C-cavalry;
+            cavalry += addC;
+            need -= addC;
 
-let addC=Math.min(spareCavalry,need);
+            if (need > 0) {
+              infantry += need;
+            }
+          }
 
-cavalry+=addC;
-need-=addC;
+          A -= archers;
+          C -= cavalry;
+          I -= infantry;
 
-if(need>0){
-    infantry+=need;
-}
-
-}
-
-A-=archers;
-C-=cavalry;
-I-=infantry;
-
-html+=`
+          html += `
 <tr>
 <td><b>${march}</b></td>
 <td>${archers.toLocaleString()}</td>
 <td>${cavalry.toLocaleString()}</td>
 <td>${infantry.toLocaleString()}</td>
-<td>${(archers+cavalry+infantry).toLocaleString()}</td>
+<td>${(archers + cavalry + infantry).toLocaleString()}</td>
 </tr>
 `;
+        }
 
-}
-
-html+=`
+        html += `
 </table>
 </div>
 
@@ -308,13 +293,10 @@ html+=`
 </div>
 `;
 
-document.getElementById("output").innerHTML=html;
+        document.getElementById("output").innerHTML = html;
+      }
 
-}
-
-calculate();
-
-</script>
-
-</body>
+      calculate();
+    </script>
+  </body>
 </html>
