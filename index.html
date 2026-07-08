@@ -132,7 +132,7 @@
   </head>
   <body>
     <div class="container">
-      <h1>🏹 BEAR HUNT - By 2044</h1>
+      <h1>🏹 BEAR HUNT - By 2044 (TESTING PHASE)</h1>
 
       <div class="grid">
         <div class="card">
@@ -159,6 +159,16 @@
           <label>Priority Marches</label>
           <input id="priorityMarches" type="number" value="3" />
         </div>
+        <div class="card">
+          <label>
+            Main Rally Leader (85/10/5)
+            <input id="mainLeader" type="checkbox" />
+          </label>
+        </div>
+        <div class="card">
+          <label>Leader March Size</label>
+          <input id="leaderMarchSize" type="number" value="100000" />
+        </div>
       </div>
 
       <button onclick="calculate()">Calculate</button>
@@ -178,8 +188,13 @@
 
         const MARCH_SIZE =
           parseInt(document.getElementById("marchSize").value) || 60000;
+
+        const LEADER_MARCH_SIZE =
+          parseInt(document.getElementById("leaderMarchSize").value) ||
+          MARCH_SIZE;
         const PRIORITY =
           parseInt(document.getElementById("priorityMarches").value) || 3;
+        const MAIN_LEADER = document.getElementById("mainLeader").checked;
 
         const FIX_INFANTRY = Math.round(MARCH_SIZE * 0.05);
         const MAX_ARCHERS = Math.round(MARCH_SIZE * 0.85);
@@ -188,7 +203,51 @@
         const MIN_ARCHER_PERCENT = 50;
         const MIN_ARCHERS = Math.floor(MARCH_SIZE * (MIN_ARCHER_PERCENT / 100));
 
-        const archersPerMarch = Math.floor(A / PRIORITY);
+        let html = `
+          <h2>
+          Priority Marches: ${PRIORITY} |
+          March Size: ${MARCH_SIZE.toLocaleString()}
+          </h2>
+          <div class="tb">
+          <table>
+
+          <tr>
+          <th>March</th>
+          <th>🏹 Archers</th>
+          <th>🐎 Cavalry</th>
+          <th>🛡 Infantry</th>
+          <th>Total</th>
+          </tr>
+          `;
+
+        let startMarch = 1;
+
+        if (MAIN_LEADER) {
+          const leaderArchers = Math.round(LEADER_MARCH_SIZE * 0.85);
+          const leaderCavalry = Math.round(LEADER_MARCH_SIZE * 0.1);
+          const leaderInfantry =
+            LEADER_MARCH_SIZE - leaderArchers - leaderCavalry;
+
+          html += `
+              <tr style="background:#14532d;font-weight:bold;">
+              <td><b>👑 Leader (1)</b></td>
+              <td>${leaderArchers.toLocaleString()}</td>
+              <td>${leaderCavalry.toLocaleString()}</td>
+              <td>${leaderInfantry.toLocaleString()}</td>
+              <td>${LEADER_MARCH_SIZE.toLocaleString()}</td>
+              </tr>`;
+
+          A -= leaderArchers;
+          C -= leaderCavalry;
+          I -= leaderInfantry;
+
+          startMarch = 2;
+        }
+
+        // Validation for the joiners
+        const remainingPriority = MAIN_LEADER ? PRIORITY - 1 : PRIORITY;
+
+        const archersPerMarch = Math.floor(A / remainingPriority);
 
         if (archersPerMarch < MIN_ARCHERS) {
           alert(
@@ -205,24 +264,7 @@ Please reduce the number of Priority Marches or increase your Archers.`,
           return;
         }
 
-        let html = `
-<h2>
-Priority Marches: ${PRIORITY} |
-March Size: ${MARCH_SIZE.toLocaleString()}
-</h2>
-<div class="tb">
-<table>
-
-<tr>
-<th>March</th>
-<th>🏹 Archers</th>
-<th>🐎 Cavalry</th>
-<th>🛡 Infantry</th>
-<th>Total</th>
-</tr>
-`;
-
-        for (let march = 1; march <= PRIORITY; march++) {
+        for (let march = startMarch; march <= PRIORITY; march++) {
           let remainingMarches = PRIORITY - march + 1;
 
           // Divide remaining archers evenly
