@@ -429,7 +429,7 @@
         };
       }
 
-      function calculate(validationOnly = false) {
+      function calculate(validationOnly = true) {
         let A = getNumber("archers");
         let C = getNumber("cavalry");
         let I = getNumber("infantry");
@@ -477,6 +477,7 @@
             );
           }
 
+
           if (leaderErrors.length) {
             if (validationOnly) {
               alert(
@@ -486,7 +487,6 @@
               );
             }
 
-            return false;
           }
 
           marches.push({
@@ -531,7 +531,6 @@
                   `Every joiner march requires at least ${MIN_ARCHER_PERCENTAGE}% Archers.`,
               );
 
-              return false;
             }
 
             output.innerHTML = `
@@ -614,10 +613,8 @@
               ].join("\n")}`,
             );
 
-            return false;
           }
 
-          return true;
         }
 
         let html = `
