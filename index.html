@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>Kingdom 2044 - BEAR HUNT CALCULATOR</title>
 
     <style>
@@ -87,12 +88,13 @@
 
       .tb {
         width: 100%;
-        overflow: auto;
+        overflow-x: auto;
       }
 
       table {
         width: 100%;
         margin-top: 15px;
+        border-collapse: collapse;
       }
 
       th,
@@ -128,13 +130,29 @@
         border-radius: 8px;
         line-height: 1.6;
       }
+
+      .error {
+        border-left-color: #ef4444;
+      }
+
+      .success {
+        border-left-color: #22c55e;
+      }
+
       input:disabled {
         opacity: 0.6;
         cursor: not-allowed;
         background: #cbd5e1;
       }
+
+      small.warning {
+        color: #f87171;
+        display: block;
+        margin-top: 4px;
+      }
     </style>
   </head>
+
   <body>
     <div class="container">
       <div id="google_translate_element"></div>
@@ -144,17 +162,17 @@
       <div class="grid">
         <div class="card">
           <label>Total Archers</label>
-          <input id="archers" type="number" value="150000" />
+          <input id="archers" type="number" value="180000" min="0" />
         </div>
 
         <div class="card">
           <label>Total Cavalry</label>
-          <input id="cavalry" type="number" value="100000" />
+          <input id="cavalry" type="number" value="100000" min="0" />
         </div>
 
         <div class="card">
           <label>Total Infantry</label>
-          <input id="infantry" type="number" value="100000" />
+          <input id="infantry" type="number" value="100000" min="0" />
         </div>
 
         <div class="card">
@@ -172,19 +190,26 @@
           <label>Priority Marches</label>
           <input id="priorityMarches" type="number" value="3" max="7" min="1" />
         </div>
+
         <div class="card">
           <label>
-            Main Rally Leader <br />
+            Main Rally Leader
+            <br />
+
             <ol style="padding-left: 20px">
-              <li>75% Archers</li>
-              <li>25% Cavalary</li>
-              <li>with Good Stats (Ideally 400% lethality on your stats)</li>
+              <li>85% Archers</li>
+              <li>5% Cavalry</li>
+              <li>10% Infantry</li>
+              <li>Good Stats (Ideally 400% lethality)</li>
             </ol>
+
             <input id="mainLeader" type="checkbox" />
           </label>
         </div>
+
         <div class="card">
           <label>Leader March Size</label>
+
           <input
             id="leaderMarchSize"
             type="number"
@@ -203,264 +228,567 @@
     <script>
       const mainLeader = document.getElementById("mainLeader");
       const leaderMarchSize = document.getElementById("leaderMarchSize");
+      const output = document.getElementById("output");
 
-      function toggleLeaderMarchSize(disabled) {
-        leaderMarchSize.disabled = disabled || !mainLeader.checked;
-      }
-
-      const TROOP_PERCENTAGES = {
-        ARCHERS: 0.75,
-        CAVALRY: 0.25,
-        INFANTARY: 0,
+      const LEADER_PERCENTAGES = {
+        ARCHERS: 0.85,
+        CAVALRY: 0.05,
+        INFANTRY: 0.1,
       };
 
       const IDEAL_JOINER_PERCENTAGES = {
         ARCHERS: 0.62,
         CAVALRY: 0.38,
-        INFANTARY: 0,
+        INFANTRY: 0,
+      };
+
+      const FIXED_JOINER_PERCENTAGES = {
+        ARCHERS: 0.85,
+        CAVALRY: 0.15,
+        INFANTRY: 0,
+      };
+
+      const IDEAL_MARCH_SIZE = 65000;
+
+      const MIN_ARCHER_PERCENTAGE = IDEAL_JOINER_PERCENTAGES.ARCHERS * 100;
+
+      const FIXED_ARCHER_PERCENTAGE = FIXED_JOINER_PERCENTAGES.ARCHERS * 100;
+
+      const FIXED_CAVALRY_PERCENTAGE = FIXED_JOINER_PERCENTAGES.CAVALRY * 100;
+
+      function getNumber(id, fallback = 0) {
+        const value = Number(document.getElementById(id).value);
+
+        if (!Number.isFinite(value) || value < 0) {
+          return fallback;
+        }
+
+        return Math.floor(value);
       }
 
-      const IDEAL_MARCH_SIZE =65000
+      function toggleLeaderMarchSize() {
+        leaderMarchSize.disabled = !mainLeader.checked;
+      }
 
-      function validatePriorityMarches({
-        archers,
-        cavalry,
-        infantry,
+      function createComposition(size, percentages) {
+        const archers = Math.floor(size * percentages.ARCHERS);
+        const cavalry = Math.floor(size * percentages.CAVALRY);
+        const infantry = size - archers - cavalry;
+
+        return {
+          archers,
+          cavalry,
+          infantry,
+          total: size,
+        };
+      }
+
+      function buildJoinerMarches({
         marchSize,
-        priorityMarches,
-        MAIN_LEADER,
-        PRIORITY,
-        LEADER_MARCH_SIZE,
-        MARCH_SIZE,
+        archersAvailable,
+        cavalryAvailable,
+        marchCount,
       }) {
-        // Calcualtions for the Required marches
-        const requiredArchers =
-          (MAIN_LEADER ? LEADER_MARCH_SIZE * TROOP_PERCENTAGES.ARCHERS : 0) +
-          (MAIN_LEADER ? PRIORITY - 1 : PRIORITY) *
-            MARCH_SIZE *
-            IDEAL_JOINER_PERCENTAGES.ARCHERS;
+        const minimumArchers = Math.ceil(
+          marchSize * IDEAL_JOINER_PERCENTAGES.ARCHERS,
+        );
 
-        const requiredCavalry =
-          (MAIN_LEADER ? LEADER_MARCH_SIZE * TROOP_PERCENTAGES.CAVALRY : 0) +
-          (MAIN_LEADER ? PRIORITY - 1 : PRIORITY) *
-            MARCH_SIZE *
-            IDEAL_JOINER_PERCENTAGES.CAVALRY;
+        const totalRequired = marchSize * marchCount;
 
-        const requiredInfantry =
-          (MAIN_LEADER ? LEADER_MARCH_SIZE * TROOP_PERCENTAGES.INFANTARY : 0) +
-          (MAIN_LEADER ? PRIORITY - 1 : PRIORITY) *
-            MARCH_SIZE *
-            IDEAL_JOINER_PERCENTAGES.INFANTARY;
+        if (marchCount <= 0) {
+          return {
+            valid: true,
+            marches: [],
+            totalArchers: 0,
+            totalCavalry: 0,
+            minimumArchers: 0,
+          };
+        }
 
+        const minimumArchersRequired = minimumArchers * marchCount;
+
+        if (archersAvailable < minimumArchersRequired) {
+          return {
+            valid: false,
+            reason: "ARCHER_MINIMUM",
+            marches: [],
+            requiredArchers: minimumArchersRequired,
+            availableArchers: archersAvailable,
+            totalArchers: 0,
+            totalCavalry: 0,
+            minimumArchers,
+          };
+        }
+
+        const totalAvailable = archersAvailable + cavalryAvailable;
+
+        const totalTroops = Math.min(totalRequired, totalAvailable);
+
+        let totalArchers = Math.floor(
+          totalTroops * FIXED_JOINER_PERCENTAGES.ARCHERS,
+        );
+
+        totalArchers = Math.min(totalArchers, archersAvailable);
+
+        totalArchers = Math.max(totalArchers, minimumArchersRequired);
+
+        let totalCavalry = totalTroops - totalArchers;
+
+        if (totalCavalry > cavalryAvailable) {
+          totalCavalry = cavalryAvailable;
+          totalArchers = totalTroops - totalCavalry;
+        }
+
+        totalArchers = Math.max(0, Math.floor(totalArchers));
+
+        totalCavalry = Math.max(0, Math.floor(totalCavalry));
+
+        const baseArchers = Math.floor(totalArchers / marchCount);
+
+        const extraArchers = totalArchers % marchCount;
+
+        const baseCavalry = Math.floor(totalCavalry / marchCount);
+
+        const extraCavalry = totalCavalry % marchCount;
+
+        const marches = [];
+
+        for (let i = 0; i < marchCount; i++) {
+          const archers = baseArchers;
+
+          const cavalry = baseCavalry;
+
+          const total = archers + cavalry;
+
+          marches.push({
+            archers,
+            cavalry,
+            infantry: 0,
+            total,
+            missing: Math.max(0, marchSize - total),
+            valid: archers >= minimumArchers && total >= marchSize,
+          });
+        }
+
+        const valid =
+          marches.length === marchCount &&
+          marches.every((march) => march.valid);
+
+        return {
+          valid,
+          marches,
+          totalArchers,
+          totalCavalry,
+          minimumArchers,
+          requiredArchers: minimumArchersRequired,
+          availableArchers: archersAvailable,
+          availableCavalry: cavalryAvailable,
+        };
+      }
+
+      function validateFinalMarches(marches, marchSize) {
         const errors = [];
 
-        if (archers < requiredArchers) {
-          errors.push(
-            `🏹 Archers: ${requiredArchers - archers} required, ${archers.toLocaleString()}/${requiredArchers.toLocaleString()} available`,
-          );
-        }
+        const minimumArchers = Math.ceil(
+          marchSize * IDEAL_JOINER_PERCENTAGES.ARCHERS,
+        );
 
-        if (cavalry < requiredCavalry) {
-          errors.push(
-            `🐎 Cavalry: ${requiredCavalry - cavalry} required, ${cavalry.toLocaleString()}/${requiredCavalry.toLocaleString()} available`,
-          );
-        }
+        marches.forEach((march) => {
+          if (march.archers < minimumArchers) {
+            errors.push(
+              `March ${march.number}: Archer is below ${MIN_ARCHER_PERCENTAGE}%`,
+            );
+          }
 
-        if (infantry < requiredInfantry) {
-          errors.push(
-            `🛡 Infantry: ${requiredInfantry - infantry} required, ${infantry.toLocaleString()}/${requiredInfantry.toLocaleString()} available`,
-          );
-        }
+          if (march.infantry !== IDEAL_JOINER_PERCENTAGES.INFANTRY) {
+            errors.push(
+              `March ${march.number}: Infantry must be ${IDEAL_JOINER_PERCENTAGES.INFANTRY * 100}%`,
+            );
+          }
 
-        if (errors.length) {
-          alert(
-            `⚠️ Not enough troops for ${priorityMarches} priority marches.\n\n${errors.join("\n")}\n\nReduce the number of Priority Marches or increase your troops.`,
-          );
+          if (march.total < marchSize) {
+            errors.push(
+              `March ${march.number}: missing ${(
+                marchSize - march.total
+              ).toLocaleString()} troops`,
+            );
+          }
 
-          return false;
-        }
+          if (march.archers < 0) {
+            errors.push(`March ${march.number}: invalid Archer count`);
+          }
 
-        return true;
+          if (march.cavalry < 0) {
+            errors.push(`March ${march.number}: invalid Cavalry count`);
+          }
+        });
+
+        return {
+          valid: errors.length === 0,
+          errors,
+        };
       }
 
-      mainLeader.addEventListener("change", (e) => {
-        let A = parseInt(document.getElementById("archers").value) || 0;
-
-        if (!calculate(true)) {
-          e.target.checked = false;
-          toggleLeaderMarchSize(true);
-          return;
-        }
-
-        toggleLeaderMarchSize();
-        return;
-      });
-
-      function calculate(validationONLY = false) {
-        let A = parseInt(document.getElementById("archers").value) || 0;
-        let C = parseInt(document.getElementById("cavalry").value) || 0;
-        let I = parseInt(document.getElementById("infantry").value) || 0;
+      function calculate(validationOnly = false) {
+        let A = getNumber("archers");
+        let C = getNumber("cavalry");
+        let I = getNumber("infantry");
 
         const MARCH_SIZE =
-          parseInt(document.getElementById("marchSize").value) || IDEAL_MARCH_SIZE;
+          getNumber("marchSize", IDEAL_MARCH_SIZE) || IDEAL_MARCH_SIZE;
 
-        const LEADER_MARCH_SIZE = parseInt(leaderMarchSize.value) || MARCH_SIZE;
-        const PRIORITY =
-          parseInt(document.getElementById("priorityMarches").value) || 3;
+        const PRIORITY = Math.max(
+          1,
+          Math.min(7, getNumber("priorityMarches", 3)),
+        );
+
         const MAIN_LEADER = mainLeader.checked;
 
-        const FIX_INFANTRY = Math.round(MARCH_SIZE * TROOP_PERCENTAGES.INFANTARY);
-        const MAX_ARCHERS = Math.round(MARCH_SIZE * TROOP_PERCENTAGES.ARCHERS);
+        const LEADER_MARCH_SIZE =
+          getNumber("leaderMarchSize", 100000) || 100000;
 
-        const MIN_ARCHER_PERCENT = IDEAL_JOINER_PERCENTAGES.ARCHERS;
-        const MIN_ARCHERS = Math.floor(MARCH_SIZE * MIN_ARCHER_PERCENT);
-        // Validation
-        const remainingPriority = MAIN_LEADER ? PRIORITY - 1 : PRIORITY;
+        const marches = [];
 
-        if (
-          !validatePriorityMarches({
-            archers: A,
-            cavalry: C,
-            infantry: I,
-            marchSize: MARCH_SIZE,
-            priorityMarches: remainingPriority,
-            MAIN_LEADER,
-            PRIORITY,
-            MARCH_SIZE,
+        if (MAIN_LEADER) {
+          const leader = createComposition(
             LEADER_MARCH_SIZE,
-          })
-        ) {
-          return false;
-        } else if (validationONLY) {
+            LEADER_PERCENTAGES,
+          );
+
+          const leaderErrors = [];
+
+          if (A < leader.archers) {
+            leaderErrors.push(
+              `🏹 Archers: need ${(leader.archers - A).toLocaleString()} more`,
+            );
+          }
+
+          if (C < leader.cavalry) {
+            leaderErrors.push(
+              `🐎 Cavalry: need ${(leader.cavalry - C).toLocaleString()} more`,
+            );
+          }
+
+          if (I < leader.infantry) {
+            leaderErrors.push(
+              `🛡 Infantry: need ${(
+                leader.infantry - I
+              ).toLocaleString()} more`,
+            );
+          }
+
+          if (leaderErrors.length) {
+            if (validationOnly) {
+              alert(
+                `⚠️ Not enough troops for Main Rally Leader.\n\n${leaderErrors.join(
+                  "\n",
+                )}`,
+              );
+            }
+
+            return false;
+          }
+
+          marches.push({
+            number: "👑 Leader",
+            archers: leader.archers,
+            cavalry: leader.cavalry,
+            infantry: leader.infantry,
+            total: leader.total,
+            leader: true,
+          });
+
+          A -= leader.archers;
+          C -= leader.cavalry;
+          I -= leader.infantry;
+        }
+
+        const joinerMarches = MAIN_LEADER
+          ? Math.max(0, PRIORITY - 1)
+          : PRIORITY;
+
+        if (joinerMarches > 0) {
+          const joinerResult = buildJoinerMarches({
+            marchSize: MARCH_SIZE,
+            archersAvailable: A,
+            cavalryAvailable: C,
+            marchCount: joinerMarches,
+          });
+
+          if (
+            !joinerResult.marches ||
+            joinerResult.marches.length !== joinerMarches
+          ) {
+            const required = Number(joinerResult.requiredArchers) || 0;
+
+            const available = Number(joinerResult.availableArchers) || 0;
+
+            if (validationOnly) {
+              alert(
+                `⚠️ Not enough Archers.\n\n` +
+                  `Required minimum: ${required.toLocaleString()}\n` +
+                  `Available: ${available.toLocaleString()}\n\n` +
+                  `Every joiner march requires at least ${MIN_ARCHER_PERCENTAGE}% Archers.`,
+              );
+
+              return false;
+            }
+
+            output.innerHTML = `
+              <div class="note error">
+                <strong>
+                  ⚠️ Formation cannot be completed.
+                </strong>
+                <br><br>
+                🏹 Required minimum Archers:
+                ${required.toLocaleString()}
+                <br>
+                🏹 Available Archers:
+                ${available.toLocaleString()}
+                <br>
+                🏹 Missing Archers:
+                ${(required - available).toLocaleString()}
+                <br><br>
+                Every joiner march requires at least
+                ${MIN_ARCHER_PERCENTAGE}% Archers.
+              </div>
+            `;
+
+            return false;
+          }
+
+          joinerResult.marches.forEach((march, index) => {
+            const marchNumber = MAIN_LEADER ? index + 2 : index + 1;
+
+            marches.push({
+              number: marchNumber,
+              archers: Number(march.archers) || 0,
+              cavalry: Number(march.cavalry) || 0,
+              infantry: 0,
+              total: Number(march.total) || 0,
+              missing: Number(march.missing) || 0,
+              leader: false,
+              valid: Boolean(march.valid),
+            });
+          });
+
+          A -= Number(joinerResult.totalArchers) || 0;
+
+          C -= Number(joinerResult.totalCavalry) || 0;
+
+          A = Math.max(0, A);
+          C = Math.max(0, C);
+        }
+
+        const joinerResults = marches.filter((march) => !march.leader);
+
+        const validation = validateFinalMarches(joinerResults, MARCH_SIZE);
+
+        const incompleteMarches = marches.filter((march) => {
+          const requiredSize = march.leader ? LEADER_MARCH_SIZE : MARCH_SIZE;
+
+          return march.total < requiredSize;
+        });
+
+        if (incompleteMarches.length) {
+          validation.valid = false;
+
+          incompleteMarches.forEach((march) => {
+            const requiredSize = march.leader ? LEADER_MARCH_SIZE : MARCH_SIZE;
+
+            const missing = requiredSize - march.total;
+
+            if (missing > 0) {
+              validation.errors.push(
+                `March ${march.number}: missing ${missing.toLocaleString()} troops`,
+              );
+            }
+          });
+        }
+
+        if (validationOnly) {
+          if (!validation.valid) {
+            alert(
+              `⚠️ The selected formations cannot be completely filled.\n\n${[
+                ...new Set(validation.errors),
+              ].join("\n")}`,
+            );
+
+            return false;
+          }
+
           return true;
         }
 
         let html = `
-                <h2>
-                Priority Marches: ${PRIORITY}
-                </h2>
-                <div class="tb">
-                <table>
+          <h2>
+            Priority Marches: ${PRIORITY}
+          </h2>
 
-                <tr>
+          <div class="tb">
+            <table>
+              <tr>
                 <th>March</th>
                 <th>🏹 Archers</th>
                 <th>🐎 Cavalry</th>
                 <th>🛡 Infantry</th>
                 <th>Total</th>
-                </tr>
-                `;
+                <th>Ratio</th>
+              </tr>
+        `;
 
-        let startMarch = 1;
+        marches.forEach((march) => {
+          const requiredSize = march.leader ? LEADER_MARCH_SIZE : MARCH_SIZE;
 
-        if (MAIN_LEADER) {
-          const leaderArchers = Math.round(LEADER_MARCH_SIZE * TROOP_PERCENTAGES.ARCHERS);
-          const leaderCavalry = Math.round(LEADER_MARCH_SIZE * TROOP_PERCENTAGES.CAVALRY);
-          const leaderInfantry =
-            LEADER_MARCH_SIZE - leaderArchers - leaderCavalry;
+          const isComplete = march.total >= requiredSize;
 
-          html += `
-                    <tr style="background:#14532d;font-weight:bold;">
-                    <td><b>👑 Leader (1)</b></td>
-                    <td>${leaderArchers.toLocaleString()}</td>
-                    <td>${leaderCavalry.toLocaleString()}</td>
-                    <td>${leaderInfantry.toLocaleString()}</td>
-                    <td>${LEADER_MARCH_SIZE.toLocaleString()}</td>
-                    </tr>`;
+          const rowStyle = march.leader
+            ? `style="background:#14532d;font-weight:bold;"`
+            : "";
 
-          A -= leaderArchers;
-          C -= leaderCavalry;
-          I -= leaderInfantry;
+          const archerPercentage =
+            march.total > 0
+              ? ((march.archers / march.total) * 100).toFixed(1)
+              : 0;
 
-          startMarch = 2;
-        }
+          const cavalryPercentage =
+            march.total > 0
+              ? ((march.cavalry / march.total) * 100).toFixed(1)
+              : 0;
 
-        // Validation for the joiners
+          let status = "";
 
-        for (let march = startMarch; march <= PRIORITY; march++) {
-          let remainingMarches = PRIORITY - march + 1;
-
-          // Divide remaining archers evenly
-          let archers = Math.min(MAX_ARCHERS, Math.floor(A / remainingMarches));
-
-          let infantry = FIX_INFANTRY;
-
-          // Fill cavalry
-          let cavalry = Math.min(
-            Math.floor(C / remainingMarches),
-            MARCH_SIZE - archers - infantry,
-          );
-
-          // If march still not full, use remaining cavalry then infantry
-          let total = archers + cavalry + infantry;
-
-          if (total < MARCH_SIZE) {
-            let need = MARCH_SIZE - total;
-
-            let spareCavalry = C - cavalry;
-
-            let addC = Math.min(spareCavalry, need);
-
-            cavalry += addC;
-            need -= addC;
-
-            if (need > 0) {
-              infantry += need;
-            }
+          if (!isComplete) {
+            status = `
+              <small class="warning">
+                ⚠️ Missing ${(requiredSize - march.total).toLocaleString()}
+              </small>
+            `;
           }
 
-          A -= archers;
-          C -= cavalry;
-          I -= infantry;
-
           html += `
-      <tr>
-      <td><b>${march}</b></td>
-      <td>${archers.toLocaleString()}</td>
-      <td>${cavalry.toLocaleString()}</td>
-      <td>${infantry.toLocaleString()}</td>
-      <td>${(archers + cavalry + infantry).toLocaleString()}</td>
-      </tr>
-      `;
-        }
+            <tr ${rowStyle}>
+              <td>
+                <b>${march.number}</b>
+              </td>
+
+              <td>
+                ${march.archers.toLocaleString()}
+              </td>
+
+              <td>
+                ${march.cavalry.toLocaleString()}
+              </td>
+
+              <td>
+                ${march.infantry.toLocaleString()}
+              </td>
+
+              <td>
+                ${march.total.toLocaleString()}
+                ${status}
+              </td>
+
+              <td>
+                🏹 ${archerPercentage}%<br>
+                🐎 ${cavalryPercentage}%
+              </td>
+            </tr>
+          `;
+        });
 
         html += `
-      </table>
-      </div>
+            </table>
+          </div>
 
-      <div class="remaining">
+          <div class="remaining">
+            <div>
+              <h3>🏹 Remaining Archers</h3>
+              <h2>${A.toLocaleString()}</h2>
+            </div>
 
-      <div>
-      <h3>🏹 Remaining Archers</h3>
-      <h2>${A.toLocaleString()}</h2>
-      </div>
+            <div>
+              <h3>🐎 Remaining Cavalry</h3>
+              <h2>${C.toLocaleString()}</h2>
+            </div>
 
-      <div>
-      <h3>🐎 Remaining Cavalry</h3>
-      <h2>${C.toLocaleString()}</h2>
-      </div>
+            <div>
+              <h3>🛡 Remaining Infantry</h3>
+              <h2>${I.toLocaleString()}</h2>
+            </div>
+          </div>
+        `;
 
-      <div>
-      <h3>🛡 Remaining Infantry</h3>
-      <h2>${I.toLocaleString()}</h2>
-      </div>
+        if (C > 0 && I >= 0 && !MAIN_LEADER) {
+          const SuggestionRally = createComposition(
+            LEADER_MARCH_SIZE,
+            LEADER_PERCENTAGES,
+          );
+          const rallyArchers = Math.min(A, SuggestionRally.archers);
+          const rallyInfantry = Math.min(I, SuggestionRally.infantry);
+          const remainingSpace =
+            LEADER_MARCH_SIZE - rallyArchers - rallyInfantry;
+          const rallyCavalry = Math.min(C, Math.max(0, remainingSpace));
+          const rallyTotal = rallyArchers + rallyCavalry + rallyInfantry;
 
-      </div>
-      `;
+          html += `
+    <div class="note success">
+      <strong>✅ Suggestion for Rally Host</strong><br>
+      🏹 Archers: ${rallyArchers.toLocaleString()}<br>
+      🐎 Cavalry: ${rallyCavalry.toLocaleString()}<br>
+      🛡 Infantry: ${rallyInfantry.toLocaleString()}<br>
+      <strong>Total: ${rallyTotal.toLocaleString()}</strong>
+    </div>
+  `;
+        }
 
-        document.getElementById("output").innerHTML = html;
+        if (validation.valid) {
+          html += `
+            <div class="note success">
+              <strong>
+                ✅ All priority marches are valid.
+              </strong>
+            </div>
+          `;
+        } else {
+          html += `
+            <div class="note error">
+              <strong>
+                ⚠️ Formation cannot be completed.
+              </strong>
+
+              <br><br>
+
+              ${[...new Set(validation.errors)].join("<br>")}
+            </div>
+          `;
+        }
+
+        output.innerHTML = html;
+
+        return validation.valid;
       }
 
+      mainLeader.addEventListener("change", () => {
+        toggleLeaderMarchSize();
+        calculate();
+      });
+
+      toggleLeaderMarchSize();
       calculate();
     </script>
+
     <script type="text/javascript">
       function googleTranslateElementInit() {
         new google.translate.TranslateElement(
-          { pageLanguage: "en" },
+          {
+            pageLanguage: "en",
+          },
           "google_translate_element",
         );
       }
     </script>
+
     <script
       type="text/javascript"
       src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
