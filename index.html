@@ -144,7 +144,7 @@
       <div class="grid">
         <div class="card">
           <label>Total Archers</label>
-          <input id="archers" type="number" value="100000" />
+          <input id="archers" type="number" value="150000" />
         </div>
 
         <div class="card">
@@ -162,8 +162,8 @@
           <input
             id="marchSize"
             type="number"
-            value="60000"
-            min="60000"
+            value="65000"
+            min="65000"
             max="100000"
           />
         </div>
@@ -174,7 +174,12 @@
         </div>
         <div class="card">
           <label>
-            Main Rally Leader (85/10/5)
+            Main Rally Leader <br />
+            <ol style="padding-left: 20px">
+              <li>75% Archers</li>
+              <li>25% Cavalary</li>
+              <li>with Good Stats (Ideally 400% lethality on your stats)</li>
+            </ol>
             <input id="mainLeader" type="checkbox" />
           </label>
         </div>
@@ -203,6 +208,20 @@
         leaderMarchSize.disabled = disabled || !mainLeader.checked;
       }
 
+      const TROOP_PERCENTAGES = {
+        ARCHERS: 0.75,
+        CAVALRY: 0.25,
+        INFANTARY: 0,
+      };
+
+      const IDEAL_JOINER_PERCENTAGES = {
+        ARCHERS: 0.62,
+        CAVALRY: 0.35,
+        INFANTARY: 0,
+      }
+
+      const IDEAL_MARCH_SIZE =65000
+
       function validatePriorityMarches({
         archers,
         cavalry,
@@ -214,17 +233,24 @@
         LEADER_MARCH_SIZE,
         MARCH_SIZE,
       }) {
+        // Calcualtions for the Required marches
         const requiredArchers =
-          (MAIN_LEADER ? LEADER_MARCH_SIZE * 0.85 : 0) +
-          (MAIN_LEADER ? PRIORITY - 1 : PRIORITY) * MARCH_SIZE * 0.5;
+          (MAIN_LEADER ? LEADER_MARCH_SIZE * TROOP_PERCENTAGES.ARCHERS : 0) +
+          (MAIN_LEADER ? PRIORITY - 1 : PRIORITY) *
+            MARCH_SIZE *
+            IDEAL_JOINER_PERCENTAGES.ARCHERS;
 
         const requiredCavalry =
-          (MAIN_LEADER ? LEADER_MARCH_SIZE * 0.1 : 0) +
-          (MAIN_LEADER ? PRIORITY - 1 : PRIORITY) * MARCH_SIZE * 0.25;
+          (MAIN_LEADER ? LEADER_MARCH_SIZE * TROOP_PERCENTAGES.CAVALRY : 0) +
+          (MAIN_LEADER ? PRIORITY - 1 : PRIORITY) *
+            MARCH_SIZE *
+            IDEAL_JOINER_PERCENTAGES.CAVALRY;
 
         const requiredInfantry =
-          (MAIN_LEADER ? LEADER_MARCH_SIZE * 0.05 : 0) +
-          (MAIN_LEADER ? PRIORITY - 1 : PRIORITY) * MARCH_SIZE * 0.25;
+          (MAIN_LEADER ? LEADER_MARCH_SIZE * TROOP_PERCENTAGES.INFANTARY : 0) +
+          (MAIN_LEADER ? PRIORITY - 1 : PRIORITY) *
+            MARCH_SIZE *
+            IDEAL_JOINER_PERCENTAGES.INFANTARY;
 
         const errors = [];
 
@@ -276,18 +302,18 @@
         let I = parseInt(document.getElementById("infantry").value) || 0;
 
         const MARCH_SIZE =
-          parseInt(document.getElementById("marchSize").value) || 60000;
+          parseInt(document.getElementById("marchSize").value) || IDEAL_MARCH_SIZE;
 
         const LEADER_MARCH_SIZE = parseInt(leaderMarchSize.value) || MARCH_SIZE;
         const PRIORITY =
           parseInt(document.getElementById("priorityMarches").value) || 3;
         const MAIN_LEADER = mainLeader.checked;
 
-        const FIX_INFANTRY = Math.round(MARCH_SIZE * 0.05);
-        const MAX_ARCHERS = Math.round(MARCH_SIZE * 0.85);
+        const FIX_INFANTRY = Math.round(MARCH_SIZE * TROOP_PERCENTAGES.INFANTARY);
+        const MAX_ARCHERS = Math.round(MARCH_SIZE * TROOP_PERCENTAGES.ARCHERS);
 
-        const MIN_ARCHER_PERCENT = 50;
-        const MIN_ARCHERS = Math.floor(MARCH_SIZE * (MIN_ARCHER_PERCENT / 100));
+        const MIN_ARCHER_PERCENT = IDEAL_JOINER_PERCENTAGES.ARCHERS;
+        const MIN_ARCHERS = Math.floor(MARCH_SIZE * MIN_ARCHER_PERCENT);
         // Validation
         const remainingPriority = MAIN_LEADER ? PRIORITY - 1 : PRIORITY;
 
@@ -311,8 +337,7 @@
 
         let html = `
                 <h2>
-                Priority Marches: ${PRIORITY} |
-                March Size: ${MARCH_SIZE.toLocaleString()}
+                Priority Marches: ${PRIORITY}
                 </h2>
                 <div class="tb">
                 <table>
@@ -329,8 +354,8 @@
         let startMarch = 1;
 
         if (MAIN_LEADER) {
-          const leaderArchers = Math.round(LEADER_MARCH_SIZE * 0.85);
-          const leaderCavalry = Math.round(LEADER_MARCH_SIZE * 0.1);
+          const leaderArchers = Math.round(LEADER_MARCH_SIZE * TROOP_PERCENTAGES.ARCHERS);
+          const leaderCavalry = Math.round(LEADER_MARCH_SIZE * TROOP_PERCENTAGES.CAVALRY);
           const leaderInfantry =
             LEADER_MARCH_SIZE - leaderArchers - leaderCavalry;
 
