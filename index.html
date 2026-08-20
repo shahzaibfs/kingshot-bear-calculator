@@ -343,11 +343,11 @@
 
         totalCavalry = Math.max(0, Math.floor(totalCavalry));
 
-        const baseArchers = Math.floor(totalArchers / marchCount);
+        const baseArchers = Math.round(totalArchers / marchCount);
 
         const extraArchers = totalArchers % marchCount;
 
-        const baseCavalry = Math.floor(totalCavalry / marchCount);
+        const baseCavalry = Math.round(totalCavalry / marchCount);
 
         const extraCavalry = totalCavalry % marchCount;
 
@@ -356,7 +356,7 @@
         for (let i = 0; i < marchCount; i++) {
           const archers = baseArchers;
 
-          const cavalry = baseCavalry;
+          const cavalry = baseCavalry ;
 
           const total = archers + cavalry;
 
@@ -477,7 +477,6 @@
             );
           }
 
-
           if (leaderErrors.length) {
             if (validationOnly) {
               alert(
@@ -486,7 +485,6 @@
                 )}`,
               );
             }
-
           }
 
           marches.push({
@@ -530,7 +528,6 @@
                   `Available: ${available.toLocaleString()}\n\n` +
                   `Every joiner march requires at least ${MIN_ARCHER_PERCENTAGE}% Archers.`,
               );
-
             }
 
             output.innerHTML = `
@@ -612,9 +609,7 @@
                 ...new Set(validation.errors),
               ].join("\n")}`,
             );
-
           }
-
         }
 
         let html = `
