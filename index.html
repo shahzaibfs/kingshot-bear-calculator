@@ -231,9 +231,9 @@
       const output = document.getElementById("output");
 
       const LEADER_PERCENTAGES = {
-        ARCHERS: 0.80,
-        CAVALRY: 0.10,
-        INFANTRY: 0.10,
+        ARCHERS: 0.8,
+        CAVALRY: 0.1,
+        INFANTRY: 0.1,
       };
 
       const IDEAL_JOINER_PERCENTAGES = {
@@ -243,18 +243,14 @@
       };
 
       const FIXED_JOINER_PERCENTAGES = {
-        ARCHERS: 0.80,
-        CAVALRY: 0.10,
-        INFANTRY: 0.10,
+        ARCHERS: 0.85,
+        CAVALRY: 0.1,
+        INFANTRY: 0.05,
       };
 
       const IDEAL_MARCH_SIZE = 65000;
 
       const MIN_ARCHER_PERCENTAGE = IDEAL_JOINER_PERCENTAGES.ARCHERS * 100;
-
-      const FIXED_ARCHER_PERCENTAGE = FIXED_JOINER_PERCENTAGES.ARCHERS * 100;
-
-      const FIXED_CAVALRY_PERCENTAGE = FIXED_JOINER_PERCENTAGES.CAVALRY * 100;
 
       function getNumber(id, fallback = 0) {
         const value = Number(document.getElementById(id).value);
@@ -287,110 +283,164 @@
         marchSize,
         archersAvailable,
         cavalryAvailable,
+        infantaryAvailiable,
         marchCount,
       }) {
-        const minimumArchers = Math.ceil(
-          marchSize * IDEAL_JOINER_PERCENTAGES.ARCHERS,
-        );
-
-        const totalRequired = marchSize * marchCount;
-
         if (marchCount <= 0) {
           return {
             valid: true,
             marches: [],
             totalArchers: 0,
             totalCavalry: 0,
-            minimumArchers: 0,
+            totalInfantry: 0,
           };
         }
 
-        const minimumArchersRequired = minimumArchers * marchCount;
+        const idealArchers = Math.floor(
+          marchSize * IDEAL_JOINER_PERCENTAGES.ARCHERS,
+        );
 
-        if (archersAvailable < minimumArchersRequired) {
+        const maxArchers = Math.floor(
+          marchSize * FIXED_JOINER_PERCENTAGES.ARCHERS,
+        );
+
+        const fixedInfantry = Math.floor(
+          marchSize * IDEAL_JOINER_PERCENTAGES.INFANTRY,
+        );
+
+        const requiredArchers = idealArchers * marchCount;
+        const requiredInfantry = fixedInfantry * marchCount;
+
+        if (archersAvailable < requiredArchers) {
           return {
             valid: false,
             reason: "ARCHER_MINIMUM",
             marches: [],
-            requiredArchers: minimumArchersRequired,
+            requiredArchers,
             availableArchers: archersAvailable,
             totalArchers: 0,
             totalCavalry: 0,
-            minimumArchers,
+            totalInfantry: 0,
           };
         }
 
-        const totalAvailable = archersAvailable + cavalryAvailable;
-
-        const totalTroops = Math.min(totalRequired, totalAvailable);
-
-        let totalArchers = Math.floor(
-          totalTroops * FIXED_JOINER_PERCENTAGES.ARCHERS,
-        );
-
-        totalArchers = Math.min(totalArchers, archersAvailable);
-
-        totalArchers = Math.max(totalArchers, minimumArchersRequired);
-
-        let totalCavalry = totalTroops - totalArchers;
-
-        if (totalCavalry > cavalryAvailable) {
-          totalCavalry = cavalryAvailable;
-          totalArchers = totalTroops - totalCavalry;
+        if (infantaryAvailiable < requiredInfantry) {
+          return {
+            valid: false,
+            reason: "INFANTRY_MINIMUM",
+            marches: [],
+            requiredInfantry,
+            availableInfantry: infantaryAvailiable,
+            totalArchers: 0,
+            totalCavalry: 0,
+            totalInfantry: 0,
+          };
         }
 
-        totalArchers = Math.max(0, Math.floor(totalArchers));
+        const maxTotalArchers = maxArchers * marchCount;
 
-        totalCavalry = Math.max(0, Math.floor(totalCavalry));
+        const extraArchersAvailable = Math.max(
+          0,
+          archersAvailable - requiredArchers,
+        );
 
-        const baseArchers = Math.round(totalArchers / marchCount);
+        const extraArcherCapacity = maxTotalArchers - requiredArchers;
 
-        const extraArchers = totalArchers % marchCount;
+        const extraArchers = Math.min(
+          extraArchersAvailable,
+          extraArcherCapacity,
+        );
 
-        const baseCavalry = Math.round(totalCavalry / marchCount);
+        const totalArchers = requiredArchers + extraArchers;
 
-        const extraCavalry = totalCavalry % marchCount;
+        const totalInfantry = fixedInfantry * marchCount;
+
+        const totalCapacity = marchSize * marchCount;
+
+        const totalCavalry = Math.min(
+          cavalryAvailable,
+          totalCapacity - totalArchers - totalInfantry,
+        );
+
+        function distribute(total, count) {
+          const base = Math.floor(total / count);
+          const remainder = total % count;
+
+          return Array.from(
+            { length: count },
+            (_, index) => base + (index < remainder ? 1 : 0),
+          );
+        }
+
+        const archersPerMarch = distribute(totalArchers, marchCount);
+
+        const infantryPerMarch = Array(marchCount).fill(fixedInfantry);
+
+        const cavalryPerMarch = distribute(totalCavalry, marchCount);
 
         const marches = [];
 
         for (let i = 0; i < marchCount; i++) {
-          const archers = baseArchers;
+          const archers = archersPerMarch[i];
+          const cavalry = cavalryPerMarch[i];
+          const infantry = infantryPerMarch[i];
 
-          const cavalry = baseCavalry ;
-
-          const total = archers + cavalry;
+          const total = archers + cavalry + infantry;
 
           marches.push({
+            number: i + 1,
             archers,
             cavalry,
-            infantry: 0,
+            infantry,
             total,
             missing: Math.max(0, marchSize - total),
-            valid: archers >= minimumArchers && total >= marchSize,
+            valid:
+              archers >= idealArchers &&
+              archers <= maxArchers &&
+              infantry === fixedInfantry &&
+              total <= marchSize,
           });
         }
 
-        const valid =
-          marches.length === marchCount &&
-          marches.every((march) => march.valid);
-
         return {
-          valid,
+          valid: marches.every((march) => march.valid),
+
           marches,
-          totalArchers,
-          totalCavalry,
-          minimumArchers,
-          requiredArchers: minimumArchersRequired,
+
+          totalArchers: marches.reduce((sum, march) => sum + march.archers, 0),
+
+          totalCavalry: marches.reduce((sum, march) => sum + march.cavalry, 0),
+
+          totalInfantry: marches.reduce(
+            (sum, march) => sum + march.infantry,
+            0,
+          ),
+
+          minimumArchers: idealArchers,
+          maximumArchers: maxArchers,
+          fixedInfantry,
+
+          requiredArchers,
+          requiredInfantry,
+
           availableArchers: archersAvailable,
           availableCavalry: cavalryAvailable,
+          availableInfantry: infantaryAvailiable,
         };
       }
-
       function validateFinalMarches(marches, marchSize) {
         const errors = [];
 
         const minimumArchers = Math.ceil(
           marchSize * IDEAL_JOINER_PERCENTAGES.ARCHERS,
+        );
+
+        const minimumInfantry = Math.ceil(
+          marchSize * IDEAL_JOINER_PERCENTAGES.INFANTRY,
+        );
+
+        const maximumInfantry = Math.floor(
+          marchSize * FIXED_JOINER_PERCENTAGES.INFANTRY,
         );
 
         marches.forEach((march) => {
@@ -400,9 +450,19 @@
             );
           }
 
-          if (march.infantry !== IDEAL_JOINER_PERCENTAGES.INFANTRY) {
+          if (march.infantry < minimumInfantry) {
             errors.push(
-              `March ${march.number}: Infantry must be ${IDEAL_JOINER_PERCENTAGES.INFANTRY * 100}%`,
+              `March ${march.number}: Infantry is below ${
+                IDEAL_JOINER_PERCENTAGES.INFANTRY * 100
+              }%`,
+            );
+          }
+
+          if (march.infantry > maximumInfantry) {
+            errors.push(
+              `March ${march.number}: Infantry exceeds ${
+                FIXED_JOINER_PERCENTAGES.INFANTRY * 100
+              }%`,
             );
           }
 
@@ -420,6 +480,10 @@
 
           if (march.cavalry < 0) {
             errors.push(`March ${march.number}: invalid Cavalry count`);
+          }
+
+          if (march.infantry < 0) {
+            errors.push(`March ${march.number}: invalid Infantry count`);
           }
         });
 
@@ -477,14 +541,12 @@
             );
           }
 
-          if (leaderErrors.length) {
-            if (validationOnly) {
-              alert(
-                `⚠️ Not enough troops for Main Rally Leader.\n\n${leaderErrors.join(
-                  "\n",
-                )}`,
-              );
-            }
+          if (leaderErrors.length && validationOnly) {
+            alert(
+              `⚠️ Not enough troops for Main Rally Leader.\n\n${leaderErrors.join(
+                "\n",
+              )}`,
+            );
           }
 
           marches.push({
@@ -499,6 +561,10 @@
           A -= leader.archers;
           C -= leader.cavalry;
           I -= leader.infantry;
+
+          A = Math.max(0, A);
+          C = Math.max(0, C);
+          I = Math.max(0, I);
         }
 
         const joinerMarches = MAIN_LEADER
@@ -510,6 +576,7 @@
             marchSize: MARCH_SIZE,
             archersAvailable: A,
             cavalryAvailable: C,
+            infantaryAvailiable: I,
             marchCount: joinerMarches,
           });
 
@@ -517,36 +584,37 @@
             !joinerResult.marches ||
             joinerResult.marches.length !== joinerMarches
           ) {
-            const required = Number(joinerResult.requiredArchers) || 0;
+            let message = "⚠️ Formation cannot be completed.\n\n";
 
-            const available = Number(joinerResult.availableArchers) || 0;
+            if (joinerResult.reason === "ARCHER_MINIMUM") {
+              message +=
+                `🏹 Required Archers: ${(
+                  joinerResult.requiredArchers || 0
+                ).toLocaleString()}\n` +
+                `🏹 Available Archers: ${(
+                  joinerResult.availableArchers || 0
+                ).toLocaleString()}`;
+            }
+
+            if (joinerResult.reason === "INFANTRY_MINIMUM") {
+              message +=
+                `🛡 Required Infantry: ${(
+                  joinerResult.requiredInfantry || 0
+                ).toLocaleString()}\n` +
+                `🛡 Available Infantry: ${(
+                  joinerResult.availableInfantry || 0
+                ).toLocaleString()}`;
+            }
 
             if (validationOnly) {
-              alert(
-                `⚠️ Not enough Archers.\n\n` +
-                  `Required minimum: ${required.toLocaleString()}\n` +
-                  `Available: ${available.toLocaleString()}\n\n` +
-                  `Every joiner march requires at least ${MIN_ARCHER_PERCENTAGE}% Archers.`,
-              );
+              alert(message);
             }
 
             output.innerHTML = `
               <div class="note error">
-                <strong>
-                  ⚠️ Formation cannot be completed.
-                </strong>
+                <strong>⚠️ Formation cannot be completed.</strong>
                 <br><br>
-                🏹 Required minimum Archers:
-                ${required.toLocaleString()}
-                <br>
-                🏹 Available Archers:
-                ${available.toLocaleString()}
-                <br>
-                🏹 Missing Archers:
-                ${(required - available).toLocaleString()}
-                <br><br>
-                Every joiner march requires at least
-                ${MIN_ARCHER_PERCENTAGE}% Archers.
+                ${message.replace(/\n/g, "<br>")}
               </div>
             `;
 
@@ -560,7 +628,7 @@
               number: marchNumber,
               archers: Number(march.archers) || 0,
               cavalry: Number(march.cavalry) || 0,
-              infantry: 0,
+              infantry: Number(march.infantry) || 0,
               total: Number(march.total) || 0,
               missing: Number(march.missing) || 0,
               leader: false,
@@ -569,11 +637,12 @@
           });
 
           A -= Number(joinerResult.totalArchers) || 0;
-
           C -= Number(joinerResult.totalCavalry) || 0;
+          I -= Number(joinerResult.totalInfantry) || 0;
 
           A = Math.max(0, A);
           C = Math.max(0, C);
+          I = Math.max(0, I);
         }
 
         const joinerResults = marches.filter((march) => !march.leader);
@@ -600,16 +669,6 @@
               );
             }
           });
-        }
-
-        if (validationOnly) {
-          if (!validation.valid) {
-            alert(
-              `⚠️ The selected formations cannot be completely filled.\n\n${[
-                ...new Set(validation.errors),
-              ].join("\n")}`,
-            );
-          }
         }
 
         let html = `
@@ -648,6 +707,11 @@
               ? ((march.cavalry / march.total) * 100).toFixed(1)
               : 0;
 
+          const infantryPercentage =
+            march.total > 0
+              ? ((march.infantry / march.total) * 100).toFixed(1)
+              : 0;
+
           let status = "";
 
           if (!isComplete) {
@@ -683,7 +747,8 @@
 
               <td>
                 🏹 ${archerPercentage}%<br>
-                🐎 ${cavalryPercentage}%
+                🐎 ${cavalryPercentage}%<br>
+                🛡 ${infantryPercentage}%
               </td>
             </tr>
           `;
@@ -711,27 +776,32 @@
           </div>
         `;
 
-        if (C > 0 && I >= 0 && !MAIN_LEADER) {
-          const SuggestionRally = createComposition(
+        if ((C > 0 || A > 0 || I > 0) && !MAIN_LEADER) {
+          const suggestionRally = createComposition(
             LEADER_MARCH_SIZE,
             LEADER_PERCENTAGES,
           );
-          const rallyArchers = Math.min(A, SuggestionRally.archers);
-          const rallyInfantry = Math.min(I, SuggestionRally.infantry);
+
+          const rallyArchers = Math.min(A, suggestionRally.archers);
+
+          const rallyInfantry = Math.min(I, suggestionRally.infantry);
+
           const remainingSpace =
             LEADER_MARCH_SIZE - rallyArchers - rallyInfantry;
+
           const rallyCavalry = Math.min(C, Math.max(0, remainingSpace));
+
           const rallyTotal = rallyArchers + rallyCavalry + rallyInfantry;
 
           html += `
-    <div class="note success">
-      <strong>✅ Suggestion for Rally Host</strong><br>
-      🏹 Archers: ${rallyArchers.toLocaleString()}<br>
-      🐎 Cavalry: ${rallyCavalry.toLocaleString()}<br>
-      🛡 Infantry: ${rallyInfantry.toLocaleString()}<br>
-      <strong>Total: ${rallyTotal.toLocaleString()}</strong>
-    </div>
-  `;
+            <div class="note success">
+              <strong>✅ Suggestion for Rally Host</strong><br>
+              🏹 Archers: ${rallyArchers.toLocaleString()}<br>
+              🐎 Cavalry: ${rallyCavalry.toLocaleString()}<br>
+              🛡 Infantry: ${rallyInfantry.toLocaleString()}<br>
+              <strong>Total: ${rallyTotal.toLocaleString()}</strong>
+            </div>
+          `;
         }
 
         if (validation.valid) {
