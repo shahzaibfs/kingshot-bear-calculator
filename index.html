@@ -100,8 +100,9 @@
       th,
       td {
         border: 1px solid #475569;
-        padding: 12px;
+        padding: 15px;
         text-align: center;
+        white-space: nowrap;
       }
 
       th {
@@ -162,7 +163,7 @@
       <div class="grid">
         <div class="card">
           <label>Total Archers</label>
-          <input id="archers" type="number" value="180000" min="0" />
+          <input id="archers" type="number" value="250000" min="0" />
         </div>
 
         <div class="card">
@@ -180,8 +181,8 @@
           <input
             id="marchSize"
             type="number"
-            value="85000"
-            min="85000"
+            value="90000"
+            min="90000"
             max="100000"
           />
         </div>
@@ -197,10 +198,10 @@
             <br />
 
             <ol style="padding-left: 20px">
-              <li>80% Archers</li>
+              <li>85% Archers</li>
               <li>10% Cavalry</li>
-              <li>10% Infantry</li>
-              <li>Strong Archer lethality Stats (500%+ is ideal)</li>
+              <li>5% Infantry</li>
+              <li>Strong Archer lethality Stats (600% -700% + is ideal)</li>
             </ol>
 
             <input id="mainLeader" type="checkbox" />
@@ -231,9 +232,9 @@
       const output = document.getElementById("output");
 
       const LEADER_PERCENTAGES = {
-        ARCHERS: 0.8,
-        CAVALRY: 0.1,
-        INFANTRY: 0.1,
+        ARCHERS: 0.85,
+        CAVALRY: 0.10,
+        INFANTRY: 0.05,
       };
 
       const IDEAL_JOINER_PERCENTAGES = {
@@ -243,9 +244,9 @@
       };
 
       const FIXED_JOINER_PERCENTAGES = {
-        ARCHERS: 0.90,
+         ARCHERS: 0.85,
         CAVALRY: 0.10,
-        INFANTRY: 0,
+        INFANTRY: 0.05,
       };
 
       const IDEAL_MARCH_SIZE = 65000;
@@ -305,7 +306,7 @@
         );
 
         const fixedInfantry = Math.floor(
-          marchSize * IDEAL_JOINER_PERCENTAGES.INFANTRY,
+          marchSize * FIXED_JOINER_PERCENTAGES.INFANTRY,
         );
 
         const requiredArchers = idealArchers * marchCount;
@@ -746,9 +747,11 @@
               </td>
 
               <td>
-                🏹 ${archerPercentage}%<br>
-                🐎 ${cavalryPercentage}%<br>
+                <div>
+                  🏹 ${archerPercentage}% /
+                🐎 ${cavalryPercentage}% /
                 🛡 ${infantryPercentage}%
+                </div>
               </td>
             </tr>
           `;
